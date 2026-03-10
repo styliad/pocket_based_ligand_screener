@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 from rdkit import Chem
 from rdkit.Chem import AllChem
+import MDAnalysis as mda
 
 
 # ---------------------------------------------------------------------------
@@ -60,3 +61,21 @@ def glide_real_sdf() -> Path | None:
     """Return path to the real Glide test SDF if available."""
     p = DATA_DIR / "glide_pose_data.sdf"
     return p if p.exists() else None
+
+
+@pytest.fixture(scope="session")
+def protein_file():
+    protein_file = Path(__file__).resolve().parent / "test_data" / "example_protein_7JVQ.pdb"
+    return protein_file
+
+
+@pytest.fixture(scope="session")
+def universe(protein_file):
+    u = mda.Universe(protein_file)
+    return u
+
+
+@pytest.fixture(scope="session")
+def ligand_file():
+    ligand_file = str(Path(__file__).resolve().parent / "test_data" / "example_ligands.sdf")
+    return ligand_file
