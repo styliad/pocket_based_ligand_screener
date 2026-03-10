@@ -1,10 +1,10 @@
-from typing import Dict, List, Tuple, Union
+from typing import Dict, Tuple
 from collections import namedtuple
 
 import prolif as plf
 
 from dock_ligand_annotator.ifg import annotate_functional_groups
-
+from dock_ligand_annotator.types import InteractionList
 
 
 def annotate_ligands(docked_poses: plf.sdf_supplier) -> Dict[int, namedtuple]:
@@ -21,9 +21,6 @@ def annotate_ligands(docked_poses: plf.sdf_supplier) -> Dict[int, namedtuple]:
     for idx, pose in enumerate(docked_poses):
         docked_ligand_fgs[idx] = annotate_functional_groups(pose)
     return docked_ligand_fgs
-
-
-Interaction = List[Union[int, str, Tuple[int], Tuple[str], float]]
 
 
 def map_atom_indices_to_fg(docked_ligand_fgs: Dict[int, namedtuple]) -> Dict[int, Dict[int, Tuple[str]]]:
@@ -45,7 +42,7 @@ def map_atom_indices_to_fg(docked_ligand_fgs: Dict[int, namedtuple]) -> Dict[int
     return atomidx_to_fg_mapper
 
 
-def annotate_fg(interactions_list: Interaction, docked_poses: plf.sdf_supplier) -> Interaction:
+def annotate_fg(interactions_list: InteractionList, docked_poses: plf.sdf_supplier) -> InteractionList:
     """
     Appends functional group information to each interaction in the interactions list.
 

@@ -1,20 +1,13 @@
-import csv
 from pathlib import Path
-from typing import Dict, List, Tuple, Union
-
+from typing import Dict
 
 import numpy as np
 import MDAnalysis as mda
 import prolif as plf
-import pandas as pd
 
-
+from dock_ligand_annotator.types import InteractionList
 
 CONFIG_FILE = str(Path(__file__).resolve().parents[2] / "config" / "config.yaml")
-
-Interaction = List[Union[int, str, Tuple[int], Tuple[str], float]]
-
-Functional_group = Tuple[str]
 
 
 def build_bb_sc_lookup(universe: mda.Universe) -> dict:
@@ -68,7 +61,7 @@ def annotate_backbone_sidechain(universe: mda.Universe, atom_index: int,
 
 
 def parse_prolif_interactions(fps_list: Dict[int, dict],
-                              docked_ligands: plf.sdf_supplier, u: mda.Universe) -> Interaction:
+                              docked_ligands: plf.sdf_supplier, u: mda.Universe) -> InteractionList:
     '''
     Parses ProLIF interaction fingerprints and extracts detailed interaction information.
     Args:
@@ -124,40 +117,3 @@ def parse_prolif_interactions(fps_list: Dict[int, dict],
                                               interaction_distance])
     return interactions_list
 
-
-def save_to_csv(interactions_list: Interaction, filename: str) -> None:
-
-    header = ['docked_ligand_index',
-              'interaction_type',
-              'ligand_atom_indices',
-              'ligand_atom_types',
-              'residue_name',
-              'residue_number',
-              'residue_atom_indices',
-              'residue_atom_types',
-              'interaction_distance',
-              'functional_groups']
-
-    with open(filename, 'w', newline='') as file:
-        writer = csv.writer(file)
-        writer.writerow(header)
-        for interaction in interactions_list:
-            writer.writerow(interaction)
-
-
-def interactions_to_dataframe(interactions_list: Interaction) -> pd.DataFrame:
-
-    columns = ['index',
-               'docked_ligand_index',
-               'interaction_type',
-               'ligand_atom_indices',
-               'ligand_atom_types',
-               'residue_name',
-               'residue_number',
-               'residue_atom_indices',
-               'residue_atom_types',
-               'residue_atom_bb_sc',
-               'interaction_distance']
-
-    df = pd.DataFrame(interactions_list, columns=columns)
-    return df

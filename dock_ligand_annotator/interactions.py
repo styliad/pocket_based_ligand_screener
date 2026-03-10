@@ -1,21 +1,15 @@
-from typing import List, Dict, Tuple, Union
+from typing import Dict
 import prolif as plf
 import pandas as pd
 import MDAnalysis as mda
 
-from dock_ligand_annotator.interaction_utils import (
-    parse_prolif_interactions,
-    save_to_csv,
-    annotate_fg,
-    interactions_to_dataframe
-)
-
-Interaction = List[Union[int, str, Tuple[int], Tuple[str], float]]
-
-Functional_group = Tuple[str]
+from dock_ligand_annotator.types import InteractionList
+from dock_ligand_annotator.interaction_utils import parse_prolif_interactions
+from dock_ligand_annotator.io import save_to_csv, interactions_to_dataframe
+from dock_ligand_annotator.functional_groups import annotate_fg
 
 
-class Interactions:
+class InteractionLists:
     """
     A class to calculate, parse, and annotate interactions between a protein and ligands.
     Attributes:
@@ -44,19 +38,19 @@ class Interactions:
         fps_list = fp.ifp
         return fps_list
 
-    def parse(self, fps_list: Dict[int, dict], universe: mda.Universe) -> Interaction:
+    def parse(self, fps_list: Dict[int, dict], universe: mda.Universe) -> InteractionList:
         interactions_list = parse_prolif_interactions(fps_list, self.ligands, universe)
         return interactions_list
 
-    def annotate(self, interactions_list: Interaction) -> Interaction:
+    def annotate(self, interactions_list: InteractionList) -> InteractionList:
         fg_annotated_interactions = annotate_fg(interactions_list, self.ligands)
         return fg_annotated_interactions
 
     @staticmethod
-    def to_csv(interactions: Interaction, output_file) -> None:
+    def to_csv(interactions: InteractionList, output_file) -> None:
         save_to_csv(interactions, output_file)
 
     @staticmethod
-    def to_dataframe(interactions: Interaction) -> pd.DataFrame:
+    def to_dataframe(interactions: InteractionList) -> pd.DataFrame:
         df = interactions_to_dataframe(interactions)
         return df

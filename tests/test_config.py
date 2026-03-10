@@ -4,7 +4,7 @@ import pytest
 from dock_ligand_annotator.config import create_config_file, load_config
 
 TMP_CONFIG_FILE = "tmp_config_file.yaml"
-TEST_CONFIG_FILE = str(Path(__file__).resolve().parents[3] / "tests" / "test_data" / "test_config_file.yaml")
+TEST_CONFIG_FILE = str(Path(__file__).resolve().parent / "test_data" / "test_config_file.yaml")
 
 @pytest.fixture
 def protein_ligand_dict():
