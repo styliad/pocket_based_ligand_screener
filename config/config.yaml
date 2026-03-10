@@ -1,0 +1,6 @@
+protein_ligand_pairs:
+  - protein_file: "/Users/styli/Documents/Work/projects/19_code_for_fg_calculation/19a/result/docking/19a_xglide1_7JVQ_min_2.pdb"
+    ligand_file: "/Users/styli/Documents/Work/projects/19_code_for_fg_calculation/19a/result/docking/19a_xglide1_ligands.sdf"
+  # - protein_file: "/path/to/protein2.pdb"
+  #   ligand_file: "/path/to/ligand2.sdf"
+  # Add more pairs as needed

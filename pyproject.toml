@@ -1,0 +1,27 @@
+[tool.poetry]
+name = "pocket-ligand-screener"
+version = "0.1.0"
+description = "Screen docked ligand poses against pre-calculated pocket data and select the best pose per ligand."
+authors = ["Stel Iliadis <s.iliadis@qmul.ac.uk>"]
+license = "file:LICENSE"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+prolif = "^2.0.3"
+rdkit = "*"
+MDAnalysis = "^2.3.0"
+numpy = "^1.23.3"
+scipy = "*"
+pandas = "*"
+setuptools = "^75.8.0"
+pyyaml = "^6.0.2"
+
+[tool.poetry.group.dev.dependencies]
+ipykernel = "^7.2.0"
+pytest = "^7.0"
+pytest-cov = "*"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

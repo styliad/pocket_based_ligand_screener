@@ -1,0 +1,6 @@
+protein_ligand_pairs:
+  - protein_file: "path/to/working/folder/protein_1.pdb"
+    ligand_file: "path/to/working/folder/ligand_1.sdf"
+  # - protein_file: "/path/to/protein2.pdb"
+  #   ligand_file: "/path/to/ligand2.sdf"
+  # Add more pairs as needed
