@@ -1,1 +1,1 @@
-from dock_ligand_annotator.interactions import Interaction
+from dock_ligand_annotator.interactions import Interactions

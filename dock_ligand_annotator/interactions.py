@@ -9,7 +9,7 @@ from dock_ligand_annotator.io import save_to_csv, interactions_to_dataframe
 from dock_ligand_annotator.functional_groups import annotate_fg
 
 
-class InteractionLists:
+class Interactions:
     """
     A class to calculate, parse, and annotate interactions between a protein and ligands.
     Attributes:

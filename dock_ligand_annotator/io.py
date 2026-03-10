@@ -59,16 +59,19 @@ def save_to_csv(interactions_list: InteractionList, filename: str) -> None:
 
 def interactions_to_dataframe(interactions_list: InteractionList) -> pd.DataFrame:
 
-    columns = ['docked_ligand_index',
-               'interaction_type',
-               'ligand_atom_indices',
-               'ligand_atom_types',
-               'residue_name',
-               'residue_number',
-               'residue_atom_indices',
-               'residue_atom_types',
-               'residue_atom_bb_sc',
-               'interaction_distance']
+    base_columns = ['docked_ligand_index',
+                    'interaction_type',
+                    'ligand_atom_indices',
+                    'ligand_atom_types',
+                    'residue_name',
+                    'residue_number',
+                    'residue_atom_indices',
+                    'residue_atom_types',
+                    'residue_atom_bb_sc',
+                    'interaction_distance']
+
+    has_fg = any(len(row) > len(base_columns) for row in interactions_list)
+    columns = base_columns + ['functional_groups'] if has_fg else base_columns
 
     df = pd.DataFrame(interactions_list, columns=columns)
     return df
