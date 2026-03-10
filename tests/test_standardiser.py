@@ -19,14 +19,14 @@ from pocket_ligand_screener.standardiser.glide import GlideStandardiser
 class TestGlideStandardiserSynthetic:
     """Tests using the synthetic multi-pose fixture."""
 
-    def test_standardise_writes_and_records(self, tmp_sdf: Path, tmp_path: Path) -> None:
-        gs = GlideStandardiser(tmp_sdf)
+    def test_standardise_writes_and_records(self, synthetic_sdf: Path, tmp_path: Path) -> None:
+        gs = GlideStandardiser(synthetic_sdf)
         out = gs.standardise(tmp_path / "std.sdf")
         assert out.exists()
         assert len(gs) == 6
 
-    def test_ligand_idx_assignment(self, tmp_sdf: Path, tmp_path: Path) -> None:
-        gs = GlideStandardiser(tmp_sdf)
+    def test_ligand_idx_assignment(self, synthetic_sdf: Path, tmp_path: Path) -> None:
+        gs = GlideStandardiser(synthetic_sdf)
         gs.standardise(tmp_path / "std.sdf")
         records = gs.records
         aspirin_idxs = {r.ligand_idx for r in records if r.molecule_name == "aspirin"}
@@ -35,28 +35,28 @@ class TestGlideStandardiserSynthetic:
         assert len(ibuprofen_idxs) == 1
         assert aspirin_idxs != ibuprofen_idxs
 
-    def test_pose_idx_from_glide_posenum(self, tmp_sdf: Path, tmp_path: Path) -> None:
-        gs = GlideStandardiser(tmp_sdf)
+    def test_pose_idx_from_glide_posenum(self, synthetic_sdf: Path, tmp_path: Path) -> None:
+        gs = GlideStandardiser(synthetic_sdf)
         gs.standardise(tmp_path / "std.sdf")
         aspirin_pose_idxs = sorted(
             r.pose_idx for r in gs.records if r.molecule_name == "aspirin"
         )
         assert aspirin_pose_idxs == [10, 20, 30]
 
-    def test_docking_scores(self, tmp_sdf: Path, tmp_path: Path) -> None:
-        gs = GlideStandardiser(tmp_sdf)
+    def test_docking_scores(self, synthetic_sdf: Path, tmp_path: Path) -> None:
+        gs = GlideStandardiser(synthetic_sdf)
         gs.standardise(tmp_path / "std.sdf")
         scores = [r.docking_score for r in gs.records]
         assert all(isinstance(s, float) for s in scores)
         assert scores[0] == pytest.approx(-7.5)
 
-    def test_docking_algorithm(self, tmp_sdf: Path, tmp_path: Path) -> None:
-        gs = GlideStandardiser(tmp_sdf)
+    def test_docking_algorithm(self, synthetic_sdf: Path, tmp_path: Path) -> None:
+        gs = GlideStandardiser(synthetic_sdf)
         gs.standardise(tmp_path / "std.sdf")
         assert all(r.docking_algorithm == "glide" for r in gs.records)
 
-    def test_output_sdf_has_standard_props(self, tmp_sdf: Path, tmp_path: Path) -> None:
-        gs = GlideStandardiser(tmp_sdf)
+    def test_output_sdf_has_standard_props(self, synthetic_sdf: Path, tmp_path: Path) -> None:
+        gs = GlideStandardiser(synthetic_sdf)
         out = gs.standardise(tmp_path / "std.sdf")
 
         suppl = Chem.SDMolSupplier(str(out), removeHs=False)
@@ -77,24 +77,24 @@ class TestGlideStandardiserSynthetic:
         with pytest.raises(FileNotFoundError):
             GlideStandardiser(tmp_path / "nonexistent.sdf")
 
-    def test_repr_and_len(self, tmp_sdf: Path, tmp_path: Path) -> None:
-        gs = GlideStandardiser(tmp_sdf)
+    def test_repr_and_len(self, synthetic_sdf: Path, tmp_path: Path) -> None:
+        gs = GlideStandardiser(synthetic_sdf)
         assert len(gs) == 0
         gs.standardise(tmp_path / "std.sdf")
         assert len(gs) == 6
         assert "GlideStandardiser" in repr(gs)
         assert "n_poses=6" in repr(gs)
 
-    def test_records_property_returns_copy(self, tmp_sdf: Path, tmp_path: Path) -> None:
-        gs = GlideStandardiser(tmp_sdf)
+    def test_records_property_returns_copy(self, synthetic_sdf: Path, tmp_path: Path) -> None:
+        gs = GlideStandardiser(synthetic_sdf)
         gs.standardise(tmp_path / "std.sdf")
         records = gs.records
         records.clear()
         assert len(gs) == 6  # internal list unchanged
 
-    def test_record_has_no_mol(self, tmp_sdf: Path, tmp_path: Path) -> None:
+    def test_record_has_no_mol(self, synthetic_sdf: Path, tmp_path: Path) -> None:
         """Verify that records are lightweight (no Mol objects in memory)."""
-        gs = GlideStandardiser(tmp_sdf)
+        gs = GlideStandardiser(synthetic_sdf)
         gs.standardise(tmp_path / "std.sdf")
         for r in gs.records:
             assert isinstance(r, StandardisedPoseRecord)
@@ -110,11 +110,11 @@ class TestGlideStandardiserReal:
     """Integration tests using the real Glide rotigotine SDF."""
 
     def test_standardise_real_file(
-        self, glide_real_sdf: Path | None, tmp_path: Path
+        self, glide_real_sdf_1: Path | None, tmp_path: Path
     ) -> None:
-        if glide_real_sdf is None:
+        if glide_real_sdf_1 is None:
             pytest.skip("Real Glide SDF not available")
-        gs = GlideStandardiser(glide_real_sdf)
+        gs = GlideStandardiser(glide_real_sdf_1)
         gs.standardise(tmp_path / "rotigotine_std.sdf")
         records = gs.records
         assert len(records) == 24
@@ -122,11 +122,11 @@ class TestGlideStandardiserReal:
         assert all(r.docking_algorithm == "glide" for r in records)
 
     def test_roundtrip_real(
-        self, glide_real_sdf: Path | None, tmp_path: Path
+        self, glide_real_sdf_1: Path | None, tmp_path: Path
     ) -> None:
-        if glide_real_sdf is None:
+        if glide_real_sdf_1 is None:
             pytest.skip("Real Glide SDF not available")
-        gs = GlideStandardiser(glide_real_sdf)
+        gs = GlideStandardiser(glide_real_sdf_1)
         out = gs.standardise(tmp_path / "rotigotine_std.sdf")
 
         suppl = Chem.SDMolSupplier(str(out), removeHs=False)

@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+import warnings
+warnings.filterwarnings("ignore", message=".*MDAnalysis.topology.tables has been moved.*")
+warnings.filterwarnings("ignore", message=".*multi-threaded, use of fork\\(\\) may lead to deadlocks.*")
+
 from pathlib import Path
 
 import pytest
@@ -17,8 +21,13 @@ import MDAnalysis as mda
 DATA_DIR = Path(__file__).resolve().parent / "test_data"
 
 
+# ---------------------------------------------------------------------------
+# Standardiser
+# ---------------------------------------------------------------------------
+
+
 @pytest.fixture()
-def tmp_sdf(tmp_path: Path) -> Path:
+def synthetic_sdf(tmp_path: Path) -> Path:
     """Create a minimal multi-pose Glide-style SDF fixture.
 
     Two ligands ("aspirin" and "ibuprofen"), 3 poses each.
@@ -57,11 +66,14 @@ def tmp_sdf(tmp_path: Path) -> Path:
 
 
 @pytest.fixture()
-def glide_real_sdf() -> Path | None:
+def glide_real_sdf_1() -> Path | None:
     """Return path to the real Glide test SDF if available."""
-    p = DATA_DIR / "glide_pose_data.sdf"
+    p = DATA_DIR / "glide_real_sdf_1.sdf"
     return p if p.exists() else None
 
+# ---------------------------------------------------------------------------
+# Io
+# ---------------------------------------------------------------------------
 
 @pytest.fixture(scope="session")
 def protein_file():

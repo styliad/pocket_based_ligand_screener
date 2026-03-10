@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Dict
 import csv
+import warnings
 
 import MDAnalysis as mda
 import prolif as plf
@@ -22,7 +23,9 @@ def load_files(config: dict) -> Dict[str, str]:
 
 def load_universe(protein_file: str) -> mda.Universe:
     u = mda.Universe(protein_file)
-    u.atoms.guess_bonds()  # Important for correct functionality
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", DeprecationWarning)
+        u.atoms.guess_bonds()
     return u
 
 

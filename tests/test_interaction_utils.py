@@ -2,12 +2,10 @@ import pytest
 import MDAnalysis as mda
 import prolif as plf
 
-from dock_ligand_annotator.interaction_utils import (
-    annotate_backbone_sidechain,
-    parse_prolif_interactions,
-    save_to_csv,
-    interactions_to_dataframe,    
-)
+from dock_ligand_annotator.interaction_utils import annotate_backbone_sidechain,parse_prolif_interactions
+    
+    
+from dock_ligand_annotator.io import save_to_csv,interactions_to_dataframe
 
 from dock_ligand_annotator.functional_groups import(
     annotate_ligands,
