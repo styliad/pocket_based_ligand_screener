@@ -6,15 +6,15 @@ and dummy/placeholder functions for modules that are not yet built.
 
 Pipeline
 --------
-1. STANDARDISE  — convert docking software SDF → standardised SDF   [DONE]
-2. ANNOTATE     — calculate interactions + functional groups          [DONE - dock_ligand_annotator]
+1. STANDARDISE  — convert docking software output SDF → standardised SDF
+2. ANNOTATE     — calculate interactions + functional groups
 3. SCREEN       — score poses against pocket data, select best pose  [TODO]
 
 Run modes for screening (step 3):
     - "residue_contact": maximise common residue contacts between
-      ligand pose and pocket (uses output4.csv)
+      ligand pose and pocket (uses .csv input file)
     - "surface_overlap": maximise spatial overlap between ligand atom
-      positions and pocket surface vertices (uses pockets.npz)
+      positions and pocket surface vertices (uses .npz input file)
 """
 
 from pathlib import Path
