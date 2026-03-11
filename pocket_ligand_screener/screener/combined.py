@@ -99,23 +99,46 @@ def score_all_poses(
     return pd.DataFrame(rows)
 
 
-def select_best_pose_per_pocket(
+def select_best_pose(
     scores_df: pd.DataFrame,
     rank_by: str = "combined_score",
+    aggregation: str = "sum",
 ) -> pd.DataFrame:
-    """Select the best pose for each pocket.
+    """Select the best pose based on performance across all pockets.
+
+    For each pose, the ``rank_by`` scores from all pockets are aggregated
+    (summed by default) into a single ``aggregated_score``. The pose with
+    the highest aggregated score is selected.
 
     Parameters
     ----------
     scores_df : pd.DataFrame
-        Output of :func:`score_all_poses`.
+        Output of :func:`score_all_poses` — one row per (pose, pocket).
     rank_by : str
-        Column to maximise when selecting the best pose.
+        Column to aggregate across pockets.
+    aggregation : str
+        How to combine per-pocket scores: ``"sum"``, ``"mean"``, or ``"max"``.
 
     Returns
     -------
     pd.DataFrame
-        One row per pocket, the pose with the highest ``rank_by`` value.
+        All rows from ``scores_df`` for the winning pose (one row per
+        pocket), with an added ``aggregated_score`` column.
     """
-    idx = scores_df.groupby("pocket_name")[rank_by].idxmax()
-    return scores_df.loc[idx].reset_index(drop=True)
+    agg_funcs = {"sum": "sum", "mean": "mean", "max": "max"}
+    if aggregation not in agg_funcs:
+        raise ValueError(
+            f"Unknown aggregation {aggregation!r}. Use 'sum', 'mean', or 'max'."
+        )
+
+    pose_agg = (
+        scores_df
+        .groupby("docked_ligand_index")[rank_by]
+        .agg(agg_funcs[aggregation])
+        .rename("aggregated_score")
+    )
+
+    best_pose_idx = pose_agg.idxmax()
+    result = scores_df[scores_df["docked_ligand_index"] == best_pose_idx].copy()
+    result["aggregated_score"] = pose_agg.loc[best_pose_idx]
+    return result.reset_index(drop=True)

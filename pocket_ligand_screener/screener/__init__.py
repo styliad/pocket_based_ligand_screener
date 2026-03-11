@@ -8,7 +8,7 @@ from pocket_ligand_screener.screener.surface_overlap import (
 )
 from pocket_ligand_screener.screener.combined import (
     score_all_poses,
-    select_best_pose_per_pocket,
+    select_best_pose,
 )
 
 __all__ = [
@@ -17,5 +17,5 @@ __all__ = [
     "SurfaceOverlapScorer",
     "coords_from_mol",
     "score_all_poses",
-    "select_best_pose_per_pocket",
+    "select_best_pose",
 ]

@@ -30,7 +30,7 @@ from pocket_ligand_screener.screener import (
     annotate_all_pockets,
     coords_from_mol,
     score_all_poses,
-    select_best_pose_per_pocket,
+    select_best_pose,
 )
 
 # ---------------------------------------------------------------------------
@@ -226,7 +226,7 @@ def select_best_poses(
         surface_weight=surface_weight,
     )
 
-    best_df = select_best_pose_per_pocket(scores_df, rank_by=rank_by)
+    best_df = select_best_pose(scores_df, rank_by=rank_by)
 
     print(f"  Scored {len(scores_df)} (pose, pocket) pairs")
     print(f"  Selected {len(best_df)} best pose(s)")

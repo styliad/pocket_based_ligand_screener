@@ -260,16 +260,212 @@ class TestCombinedScoring:
             "residue_count", "residue_tversky", "combined_score",
         }
 
-    def test_select_best_pose_per_pocket(self, pocket_csv, interactions_df):
+    def test_select_best_pose(self, pocket_csv, interactions_df):
         from pocket_ligand_screener.screener.residue_contact import ResidueContactScorer
         from pocket_ligand_screener.screener.combined import (
             score_all_poses,
-            select_best_pose_per_pocket,
+            select_best_pose,
         )
 
         scorer_a = ResidueContactScorer(pocket_csv, pocket_name="pocket_A")
-        scorers = {"pocket_A": scorer_a}
+        scorer_b = ResidueContactScorer(pocket_csv, pocket_name="pocket_B")
+        scorers = {"pocket_A": scorer_a, "pocket_B": scorer_b}
 
         scores_df = score_all_poses(interactions_df, scorers)
-        best = select_best_pose_per_pocket(scores_df, rank_by="residue_tversky")
-        assert len(best) == 1  # one pocket → one best pose
+        best = select_best_pose(scores_df, rank_by="residue_tversky")
+        # Should return rows for the winning pose across all pockets
+        assert len(best) == 2  # one row per pocket for the best pose
+        assert best["docked_ligand_index"].nunique() == 1  # single winning pose
+        assert "aggregated_score" in best.columns
+
+
+# ===========================================================================
+# Real data: DRD5 example
+# ===========================================================================
+
+DRD5_DIR = Path(__file__).resolve().parent / "test_data" / "drd5_example"
+
+_drd5_available = (
+    (DRD5_DIR / "pocket_residue_contacts_ang_3.csv").exists()
+    and (DRD5_DIR / "pockets.npz").exists()
+    and (DRD5_DIR / "annotated_interactions.csv").exists()
+)
+
+_glide_sdf_available = (
+    Path(__file__).resolve().parent / "test_data" / "glide_real_sdf_1.sdf"
+).exists()
+
+
+@pytest.mark.skipif(not _drd5_available, reason="DRD5 example data not available")
+class TestRealResidueContact:
+    """Residue contact scoring against real DRD5 pocket data."""
+
+    @pytest.fixture(autouse=True)
+    def _setup(self):
+        from pocket_ligand_screener.screener.residue_contact import ResidueContactScorer
+
+        self.pocket_csv = DRD5_DIR / "pocket_residue_contacts_ang_3.csv"
+        self.interactions_df = pd.read_csv(DRD5_DIR / "annotated_interactions.csv")
+        self.pocket_names = ["C1=_pocket_1", "C1=_pocket_2", "C1=_pocket_3"]
+        self.scorers = {
+            name: ResidueContactScorer(self.pocket_csv, pocket_name=name)
+            for name in self.pocket_names
+        }
+
+    def test_pocket_residues_loaded(self):
+        for name, scorer in self.scorers.items():
+            assert len(scorer.pocket_residues) > 0, f"Pocket {name} has no residues"
+
+    def test_all_poses_scored(self):
+        pose_indices = sorted(self.interactions_df["docked_ligand_index"].unique())
+        assert len(pose_indices) == 24  # 24 docked poses
+
+        for pose_idx in pose_indices:
+            pose_df = self.interactions_df[
+                self.interactions_df["docked_ligand_index"] == pose_idx
+            ]
+            for name, scorer in self.scorers.items():
+                scores = scorer.score_all(pose_df)
+                assert 0.0 <= scores["coverage"] <= 1.0
+                assert 0.0 <= scores["jaccard"] <= 1.0
+                assert 0.0 <= scores["tversky"] <= 1.0
+                assert scores["count"] >= 0.0
+
+    def test_best_pose_contacts_pocket_1(self):
+        """The best pose for the main binding pocket should have non-trivial overlap."""
+        scorer = self.scorers["C1=_pocket_1"]
+        best_score = 0.0
+        for pose_idx, pose_df in self.interactions_df.groupby("docked_ligand_index"):
+            s = scorer.score_coverage(pose_df)
+            best_score = max(best_score, s)
+        # The co-crystallised ligand pose should cover a meaningful fraction
+        assert best_score > 0.3, f"Best coverage for pocket_1 is only {best_score:.3f}"
+
+    def test_annotate_all_pockets(self):
+        from pocket_ligand_screener.screener.residue_contact import annotate_all_pockets
+
+        result = annotate_all_pockets(self.interactions_df, self.scorers)
+        assert "pocket_name" in result.columns
+        # At least some rows should be annotated with a pocket
+        assert result["pocket_name"].notna().sum() > 0
+        # Some rows should have no pocket (contacts outside all pockets)
+        assert result["pocket_name"].isna().sum() > 0
+
+
+@pytest.mark.skipif(not _drd5_available, reason="DRD5 example data not available")
+class TestRealSurfaceOverlap:
+    """Surface overlap scoring against real DRD5 pocket vertices."""
+
+    @pytest.fixture(autouse=True)
+    def _setup(self):
+        from pocket_ligand_screener.screener.surface_overlap import SurfaceOverlapScorer
+
+        self.npz_path = DRD5_DIR / "pockets.npz"
+        self.scorer = SurfaceOverlapScorer(self.npz_path, distance_cutoff=2.5)
+
+    def test_all_pockets_loaded(self):
+        assert set(self.scorer.pockets.keys()) == {
+            "C1=_pocket_1", "C1=_pocket_2", "C1=_pocket_3",
+        }
+        assert self.scorer.pockets["C1=_pocket_1"].shape == (188, 3)
+        assert self.scorer.pockets["C1=_pocket_2"].shape == (152, 3)
+        assert self.scorer.pockets["C1=_pocket_3"].shape == (54, 3)
+
+    @pytest.mark.skipif(not _glide_sdf_available, reason="glide_real_sdf_1.sdf not available")
+    def test_score_real_poses(self):
+        from rdkit import Chem
+        from pocket_ligand_screener.screener.surface_overlap import coords_from_mol
+
+        sdf_path = Path(__file__).resolve().parent / "test_data" / "glide_real_sdf_1.sdf"
+        supplier = Chem.SDMolSupplier(str(sdf_path), removeHs=False)
+
+        for i, mol in enumerate(supplier):
+            if mol is None:
+                continue
+            coords = coords_from_mol(mol)
+            scores = self.scorer.score_all_pockets(coords)
+            for pocket_name, cov in scores.items():
+                assert 0.0 <= cov <= 1.0, (
+                    f"Pose {i}, pocket {pocket_name}: coverage {cov} out of range"
+                )
+
+    @pytest.mark.skipif(not _glide_sdf_available, reason="glide_real_sdf_1.sdf not available")
+    def test_best_pose_covers_pocket_1(self):
+        """At least one pose should meaningfully overlap with the main pocket."""
+        from rdkit import Chem
+        from pocket_ligand_screener.screener.surface_overlap import coords_from_mol
+
+        sdf_path = Path(__file__).resolve().parent / "test_data" / "glide_real_sdf_1.sdf"
+        supplier = Chem.SDMolSupplier(str(sdf_path), removeHs=False)
+
+        best_cov = 0.0
+        for mol in supplier:
+            if mol is None:
+                continue
+            coords = coords_from_mol(mol)
+            cov = self.scorer.score(coords, pocket_name="C1=_pocket_1")
+            best_cov = max(best_cov, cov)
+
+        assert best_cov > 0.1, f"Best surface coverage for pocket_1 is only {best_cov:.3f}"
+
+
+@pytest.mark.skipif(
+    not (_drd5_available and _glide_sdf_available),
+    reason="DRD5 example data or glide SDF not available",
+)
+class TestRealCombined:
+    """Combined scoring end-to-end with real DRD5 data."""
+
+    @pytest.fixture(autouse=True)
+    def _setup(self):
+        from pocket_ligand_screener.screener.residue_contact import ResidueContactScorer
+        from pocket_ligand_screener.screener.surface_overlap import SurfaceOverlapScorer
+
+        self.pocket_csv = DRD5_DIR / "pocket_residue_contacts_ang_3.csv"
+        self.interactions_df = pd.read_csv(DRD5_DIR / "annotated_interactions.csv")
+        self.pocket_names = ["C1=_pocket_1", "C1=_pocket_2", "C1=_pocket_3"]
+        self.residue_scorers = {
+            name: ResidueContactScorer(self.pocket_csv, pocket_name=name)
+            for name in self.pocket_names
+        }
+        self.surface_scorer = SurfaceOverlapScorer(
+            DRD5_DIR / "pockets.npz", distance_cutoff=2.5,
+        )
+        self.sdf_path = Path(__file__).resolve().parent / "test_data" / "glide_real_sdf_1.sdf"
+
+    def test_score_all_poses_combined(self):
+        from rdkit import Chem
+        from pocket_ligand_screener.screener.combined import score_all_poses
+
+        supplier = Chem.SDMolSupplier(str(self.sdf_path), removeHs=False)
+        scores_df = score_all_poses(
+            self.interactions_df,
+            self.residue_scorers,
+            surface_scorer=self.surface_scorer,
+            sdf_supplier=supplier,
+        )
+        # 24 poses × 3 pockets = 72 rows
+        assert len(scores_df) == 24 * 3
+        assert all(scores_df["combined_score"] >= 0.0)
+        assert all(scores_df["combined_score"] <= 1.0)
+
+    def test_select_best_pose(self):
+        from rdkit import Chem
+        from pocket_ligand_screener.screener.combined import (
+            score_all_poses,
+            select_best_pose,
+        )
+
+        supplier = Chem.SDMolSupplier(str(self.sdf_path), removeHs=False)
+        scores_df = score_all_poses(
+            self.interactions_df,
+            self.residue_scorers,
+            surface_scorer=self.surface_scorer,
+            sdf_supplier=supplier,
+        )
+        best = select_best_pose(scores_df)
+        # Single winning pose, one row per pocket
+        assert best["docked_ligand_index"].nunique() == 1
+        assert len(best) == 3
+        assert "aggregated_score" in best.columns
+        assert best["aggregated_score"].iloc[0] > 0.0
