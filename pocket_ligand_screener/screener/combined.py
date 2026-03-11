@@ -74,7 +74,10 @@ def score_all_poses(
         ``docked_ligand_index``, ``pocket_name``,
         ``residue_count``, ``residue_coverage``, ``residue_jaccard``,
         ``residue_tversky``, ``surface_coverage``,
-        ``water_displaced_count``, ``combined_score``.
+        ``water_displaced_count``, ``water_displaced_fraction``,
+        ``combined_score``.  All three terms entering the combined score
+        (``residue_tversky``, ``surface_coverage``,
+        ``water_displaced_fraction``) are normalised to [0, 1].
     """
     # Apply interaction filter before scoring
     if interaction_filter is not None:
@@ -99,9 +102,11 @@ def score_all_poses(
         ligand_coords = coords_from_mol(mol) if mol is not None else None
 
         # Water displacement (pose-level, independent of pocket)
-        water_disp = 0
+        water_disp_count = 0
+        water_disp_frac = 0.0
         if water_scorer is not None and ligand_coords is not None:
-            water_disp = water_scorer.score(ligand_coords)
+            water_disp_count = water_scorer.score(ligand_coords)
+            water_disp_frac = water_scorer.score_fraction(ligand_coords)
 
         for pocket_name, scorer in residue_scorers.items():
             res_scores = scorer.score_all(pose_df, alpha=alpha, beta=beta)
@@ -114,7 +119,7 @@ def score_all_poses(
             combined = (
                 w_res * res_scores["tversky"]
                 + w_surf * surf_cov
-                + w_water * water_disp
+                + w_water * water_disp_frac
             )
 
             rows.append({
@@ -125,7 +130,8 @@ def score_all_poses(
                 "residue_jaccard": res_scores["jaccard"],
                 "residue_tversky": res_scores["tversky"],
                 "surface_coverage": surf_cov,
-                "water_displaced_count": water_disp,
+                "water_displaced_count": water_disp_count,
+                "water_displaced_fraction": water_disp_frac,
                 "combined_score": combined,
             })
 

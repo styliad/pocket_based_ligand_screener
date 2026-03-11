@@ -142,6 +142,29 @@ class TestScoring:
         ligand = np.array([[2.0, 0, 0]], dtype=np.float64)
         assert scorer.score(ligand) >= 1
 
+    def test_score_fraction_all(self, mixed_water_sites):
+        scorer = WaterDisplacementScorer(mixed_water_sites, displacement_cutoff=1.0)
+        # All 4 target waters displaced → 4/4 = 1.0
+        ligand = np.array([[0, 0, 0], [3, 0, 0], [6, 0, 0], [9, 0, 0]], dtype=np.float64)
+        assert scorer.score_fraction(ligand) == pytest.approx(1.0)
+
+    def test_score_fraction_partial(self, mixed_water_sites):
+        scorer = WaterDisplacementScorer(mixed_water_sites, displacement_cutoff=1.0)
+        # 2 of 4 target waters displaced → 0.5
+        ligand = np.array([[0.5, 0, 0], [6.5, 0, 0]], dtype=np.float64)
+        assert scorer.score_fraction(ligand) == pytest.approx(0.5)
+
+    def test_score_fraction_none(self, mixed_water_sites):
+        scorer = WaterDisplacementScorer(mixed_water_sites, displacement_cutoff=1.0)
+        ligand = np.array([[100, 100, 100]], dtype=np.float64)
+        assert scorer.score_fraction(ligand) == pytest.approx(0.0)
+
+    def test_score_fraction_no_targets(self):
+        sites = [WaterSite(site_id=1, x=0, y=0, z=0, dG=-3.0)]
+        scorer = WaterDisplacementScorer(sites)
+        ligand = np.array([[0, 0, 0]], dtype=np.float64)
+        assert scorer.score_fraction(ligand) == pytest.approx(0.0)
+
 
 # ===========================================================================
 # Integration with combined scoring
@@ -191,6 +214,7 @@ class TestCombinedIntegration:
             water_weight=0.2,
         )
         assert "water_displaced_count" in result.columns
+        assert "water_displaced_fraction" in result.columns
 
     def test_water_weight_zero_means_no_effect(self, pocket_csv, interactions_df, mixed_water_sites):
         from pocket_ligand_screener.screener.residue_contact import ResidueContactScorer
@@ -264,3 +288,4 @@ class TestCombinedIntegration:
         scorer_a = ResidueContactScorer(pocket_csv, pocket_name="pocket_A")
         result = score_all_poses(interactions_df, {"pocket_A": scorer_a})
         assert all(result["water_displaced_count"] == 0)
+        np.testing.assert_allclose(result["water_displaced_fraction"].values, 0.0)

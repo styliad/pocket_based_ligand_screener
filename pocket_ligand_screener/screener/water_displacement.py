@@ -120,3 +120,9 @@ class WaterDisplacementScorer:
     def score(self, ligand_coords: np.ndarray) -> int:
         """Number of target waters displaced by the ligand."""
         return len(self.displaced_indices(ligand_coords))
+
+    def score_fraction(self, ligand_coords: np.ndarray) -> float:
+        """Fraction of target waters displaced by the ligand, in [0, 1]."""
+        if self.n_target_waters == 0:
+            return 0.0
+        return self.score(ligand_coords) / self.n_target_waters
