@@ -2,7 +2,7 @@
 
 Compares residue contacts from annotated interaction data (produced by
 dock_ligand_annotator) against pocket residue atoms from a pocket
-definition CSV (output4.csv).
+definition CSV.
 
 Pocket CSV columns:
     surface, pocket, protein, residue_type, residue_number,
@@ -112,7 +112,7 @@ class ResidueContactScorer:
         Parameters
         ----------
         pose_interactions : pd.DataFrame
-            Rows from the annotated interactions CSV for a single pose.
+            Rows from the pose interactions CSV for a single pose.
 
         Returns
         -------

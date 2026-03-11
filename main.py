@@ -19,7 +19,19 @@ Run modes for screening (step 3):
 
 from pathlib import Path
 
+import numpy as np
+import pandas as pd
+from rdkit import Chem
+
 from pocket_ligand_screener.standardiser import GlideStandardiser
+from pocket_ligand_screener.screener import (
+    ResidueContactScorer,
+    SurfaceOverlapScorer,
+    annotate_all_pockets,
+    coords_from_mol,
+    score_all_poses,
+    select_best_pose_per_pocket,
+)
 
 # ---------------------------------------------------------------------------
 # Paths (example — would come from config in production)
@@ -54,7 +66,7 @@ def step1_standardise(raw_sdf: Path, output_sdf: Path) -> Path:
 # ===================================================================
 # STEP 2: ANNOTATE — calculate interactions + functional groups
 # ===================================================================
-# STATUS: DONE (dock_ligand_annotator.classes.interactions.Interactions)
+# STATUS: DONE (dock_ligand_annotator.interactions.Interactions)
 # Not directly called here — runs separately and produces annotated_interactions.csv
 #
 # Uses: ProLIF for interaction fingerprints, IFG for functional groups
@@ -97,56 +109,66 @@ def step2_annotate(protein_pdb: Path, standardised_sdf: Path, output_csv: Path) 
 # ---- 3a. Load pocket data ----
 
 def load_pocket_residue_contacts(pocket_csv: Path) -> dict:
-    """Load pocket residue contacts from output4.csv.
+    """Load pocket residue contacts from pre-calculate residue contact csv file.
 
-    Returns a dict keyed by pocket name, each value containing the set of
-    (residue_type, residue_number, chain, atom_name) tuples that define
-    the pocket at atom level.
+    Returns a dict keyed by pocket name, each value being a
+    ``ResidueContactScorer`` ready to score poses against that pocket.
 
     CSV columns: surface, pocket, protein, residue_type, residue_number,
                  chain, atom_name, distance_angstrom
     """
-    raise NotImplementedError("TODO: implement pocket residue contact loader")
+    df = pd.read_csv(pocket_csv)
+    pocket_names = df["pocket"].unique()
+
+    scorers = {}
+    for pocket_name in pocket_names:
+        scorers[pocket_name] = ResidueContactScorer(pocket_csv, pocket_name=pocket_name)
+
+    print(f"  Loaded {len(scorers)} pocket(s): {list(scorers.keys())}")
+    return scorers
 
 
-def load_pocket_surface_vertices(pocket_npz: Path) -> dict:
+def load_pocket_surface_vertices(
+    pocket_npz: Path,
+    distance_cutoff: float = 2.5,
+) -> SurfaceOverlapScorer:
     """Load pocket surface vertices from pockets.npz.
 
-    Returns a dict keyed by pocket name, each value being an (N, 3) numpy
-    array of vertex coordinates in scene space. Companion metadata JSON
-    provides bounding boxes for fast pre-filtering.
+    Returns a ``SurfaceOverlapScorer`` with pre-built KD-trees for
+    every pocket found in the NPZ metadata.
     """
-    raise NotImplementedError("TODO: implement pocket vertex loader")
+    scorer = SurfaceOverlapScorer(pocket_npz, distance_cutoff=distance_cutoff)
+    print(f"  Loaded {len(scorer.pockets)} pocket surface(s): {list(scorer.pockets.keys())}")
+    return scorer
 
 
 # ---- 3b. Score each pose against pocket ----
 
 def score_pose_residue_contacts(
-    pose_interactions: "pd.DataFrame",
-    pocket_residue_atoms: set,
+    pose_interactions: pd.DataFrame,
+    scorer: ResidueContactScorer,
 ) -> float:
-    """Score a single pose by counting shared residue-atom contacts.
+    """Score a single pose by counting shared residue contacts.
 
-    Compares (residue_name, residue_number, residue_atom_indices) from
-    annotated_interactions.csv against pocket atom set from output4.csv.
+    Compares (residue_name, residue_number) from annotated_interactions.csv
+    against pocket residues from output4.csv.
 
-    Returns the number of common residue-atom contacts.
+    Returns the number of common residue contacts.
     """
-    raise NotImplementedError("TODO: implement residue contact scoring")
+    return scorer.score(pose_interactions)
 
 
 def score_pose_surface_overlap(
     pose_mol: "Chem.Mol",
-    pocket_vertices: "np.ndarray",
-    distance_cutoff: float = 2.5,
+    surface_scorer: SurfaceOverlapScorer,
+    pocket_name: str,
 ) -> float:
     """Score a single pose by spatial overlap with pocket surface.
 
-    Builds a KD-tree from pocket vertices, queries ligand atom coordinates
-    within distance_cutoff. Returns the count of pocket vertices that
-    overlap with at least one ligand atom.
+    Returns the fraction of pocket vertices covered by the ligand.
     """
-    raise NotImplementedError("TODO: implement surface overlap scoring")
+    coords = coords_from_mol(pose_mol)
+    return surface_scorer.score(coords, pocket_name=pocket_name)
 
 
 # ---- 3c. Select best pose per ligand ----
@@ -154,11 +176,15 @@ def score_pose_surface_overlap(
 def select_best_poses(
     standardised_sdf: Path,
     annotated_csv: Path,
-    pocket_data: dict,
-    mode: str,
-    distance_cutoff: float = 2.5,
+    residue_scorers: dict,
+    surface_scorer: SurfaceOverlapScorer | None = None,
+    alpha: float = 1.0,
+    beta: float = 0.3,
+    residue_weight: float = 0.6,
+    surface_weight: float = 0.4,
+    rank_by: str = "combined_score",
 ) -> "pd.DataFrame":
-    """Iterate all poses, score each, and select the best per ligand.
+    """Score all poses and select the best per pocket.
 
     Parameters
     ----------
@@ -166,41 +192,84 @@ def select_best_poses(
         Standardised SDF with molecule_name, ligand_idx, pose_idx.
     annotated_csv : Path
         Annotated interactions CSV from step 2.
-    pocket_data : dict
-        Pocket data from load_pocket_residue_contacts() or
-        load_pocket_surface_vertices().
-    mode : str
-        "residue_contact" or "surface_overlap".
-    distance_cutoff : float
-        Only used in surface_overlap mode (angstroms).
+    residue_scorers : dict
+        ``{pocket_name: ResidueContactScorer}``.
+    surface_scorer : SurfaceOverlapScorer, optional
+        If provided, surface overlap scores are computed and combined.
+    alpha, beta : float
+        Tversky index parameters.
+    residue_weight, surface_weight : float
+        Weights for the combined score.
+    rank_by : str
+        Column to maximise when selecting the best pose.
 
     Returns
     -------
     pd.DataFrame
-        One row per selected pose with columns:
-        molecule_name, ligand_idx, pose_idx, docking_score, docking_algorithm,
-        pocket_name, score, + all annotated interaction columns.
+        Scores DataFrame with the best pose per pocket.
     """
-    raise NotImplementedError("TODO: implement pose selection")
+    interactions_df = pd.read_csv(annotated_csv)
+
+    # Load mol objects only if surface scoring is requested
+    sdf_supplier = None
+    if surface_scorer is not None:
+        sdf_supplier = Chem.SDMolSupplier(str(standardised_sdf), removeHs=False)
+
+    scores_df = score_all_poses(
+        interactions_df=interactions_df,
+        residue_scorers=residue_scorers,
+        surface_scorer=surface_scorer,
+        sdf_supplier=sdf_supplier,
+        alpha=alpha,
+        beta=beta,
+        residue_weight=residue_weight,
+        surface_weight=surface_weight,
+    )
+
+    best_df = select_best_pose_per_pocket(scores_df, rank_by=rank_by)
+
+    print(f"  Scored {len(scores_df)} (pose, pocket) pairs")
+    print(f"  Selected {len(best_df)} best pose(s)")
+    return scores_df, best_df
 
 
 # ---- 3d. Export results ----
 
 def export_results(
-    selected_poses_df: "pd.DataFrame",
+    scores_df: "pd.DataFrame",
+    best_df: "pd.DataFrame",
+    interactions_df: "pd.DataFrame",
+    residue_scorers: dict,
     standardised_sdf: Path,
     output_csv: Path,
     output_sdf: Path,
 ) -> None:
     """Write the final CSV and filtered SDF for selected poses.
 
-    CSV contains: pocket info, interaction type, residue contact info,
-    ligand atom info, functional groups (same schema as annotated_interactions.csv
-    but filtered to winning poses + pocket metadata columns).
+    CSV contains: full scores table + annotated interactions for winning
+    poses with pocket_name column.
 
     SDF contains only the Mol objects for the selected poses.
     """
-    raise NotImplementedError("TODO: implement result export")
+    # Save full scores
+    scores_df.to_csv(output_csv, index=False)
+    print(f"  Scores CSV → {output_csv}")
+
+    # Annotate interactions with pocket names and save
+    annotated = annotate_all_pockets(interactions_df, residue_scorers)
+    annotated_csv = output_csv.parent / "annotated_interactions_with_pockets.csv"
+    annotated.to_csv(annotated_csv, index=False)
+    print(f"  Annotated interactions → {annotated_csv}")
+
+    # Extract winning pose mol objects to a new SDF
+    winning_indices = set(best_df["docked_ligand_index"].astype(int).tolist())
+    supplier = Chem.SDMolSupplier(str(standardised_sdf), removeHs=False)
+    writer = Chem.SDWriter(str(output_sdf))
+    for i, mol in enumerate(supplier):
+        if mol is not None and i in winning_indices:
+            writer.write(mol)
+    writer.close()
+    print(f"  Selected poses SDF → {output_sdf}")
 
 
 # ===================================================================
@@ -252,26 +321,36 @@ def run_pipeline(
     # Step 3: Screen and select best pose per ligand
     print(f"Step 3: Screening poses (mode={mode})...")
 
-    if mode == "residue_contact":
-        if pocket_contacts_csv is None:
-            raise ValueError("pocket_contacts_csv is required for residue_contact mode")
-        pocket_data = load_pocket_residue_contacts(pocket_contacts_csv)
+    # Always load residue scorers (required for all modes)
+    if pocket_contacts_csv is None:
+        raise ValueError("pocket_contacts_csv is required")
+    residue_scorers = load_pocket_residue_contacts(pocket_contacts_csv)
 
-    elif mode == "surface_overlap":
+    # Optionally load surface scorer
+    surface_scorer = None
+    if mode in ("surface_overlap", "combined"):
         if pocket_vertices_npz is None:
-            raise ValueError("pocket_vertices_npz is required for surface_overlap mode")
-        pocket_data = load_pocket_surface_vertices(pocket_vertices_npz)
+            raise ValueError("pocket_vertices_npz is required for surface_overlap/combined mode")
+        surface_scorer = load_pocket_surface_vertices(pocket_vertices_npz, distance_cutoff)
+    elif mode != "residue_contact":
+        raise ValueError(
+            f"Unknown mode: {mode!r}. Use 'residue_contact', 'surface_overlap', or 'combined'."
+        )
 
-    else:
-        raise ValueError(f"Unknown mode: {mode!r}. Use 'residue_contact' or 'surface_overlap'.")
-
-    selected_df = select_best_poses(
-        standardised_sdf, annotated_csv, pocket_data, mode, distance_cutoff
+    scores_df, best_df = select_best_poses(
+        standardised_sdf,
+        annotated_csv,
+        residue_scorers=residue_scorers,
+        surface_scorer=surface_scorer,
     )
 
     # Step 4: Export
     print("Step 4: Exporting results...")
-    export_results(selected_df, standardised_sdf, output_csv, output_sdf)
+    interactions_df = pd.read_csv(annotated_csv)
+    export_results(
+        scores_df, best_df, interactions_df, residue_scorers,
+        standardised_sdf, output_csv, output_sdf,
+    )
 
     print(f"Done. Output: {output_csv}, {output_sdf}")
 

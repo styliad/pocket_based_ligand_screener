@@ -96,6 +96,8 @@ def parse_prolif_interactions(fps_list: Dict[int, dict],
 
                     residue_name = residue_pair[1].name
                     residue_num = residue_pair[1].number
+                    if isinstance(residue_num, tuple):
+                        residue_num = residue_num[0]
 
                     residue_atom_idx = interaction['parent_indices']['protein']
                     residue_atom_types = tuple([u.atoms[atm_idx].type 
