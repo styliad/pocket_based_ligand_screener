@@ -1,0 +1,95 @@
+TITLE     8IRV WaterMap hydration sites
+REMARK   4      COMPLIES WITH FORMAT V. 3.0, 1-DEC-2006
+REMARK 888
+REMARK 888 WRITTEN BY WATER_ANNOTATOR
+REMARK 999 CONVERTED FOR ROBUSTER VISUALIZATION
+REMARK 999 ALL ATOMS SET TO ELEMENT O
+REMARK 999 ORIGINAL CLASS ENCODED IN RESNAME: WVU/WBL/WHP/WUN
+REMARK 999 VERY 'UNHAPPY' WATER (3.5<ΔG kcal/mol): WVU
+REMARK 999 'UNHAPPY' WATER (2.0<ΔG<3.5 kcal/mol): WUN
+REMARK 999 BULK SOLVENT-LIKE WATER (-1.0<ΔG<2.0 kcal/mol): WBL
+REMARK 999 'HAPPY' WATER (ΔG<-1.0 kcal/mol): WHP
+REMARK 999 ΔG STORED IN B-FACTOR
+HETATM    1    O WVU A   1     -14.358 -12.808  40.384  1.00  6.68           O
+HETATM    2    O WVU A   2     -13.663  -2.574  46.296  1.00  6.01           O
+HETATM    3    O WUN A   3      -0.137 -13.244  57.938  1.00  2.76           O
+HETATM    4    O WHP A   4     -17.794 -10.613  56.056  0.95 -1.82           O
+HETATM    5    O WUN A   5      -0.860  -6.858  61.893  0.94  2.61           O
+HETATM    6    O WBL A   6      -5.084  -3.651  58.313  0.92  1.54           O
+HETATM    7    O WBL A   7      -5.961  -6.168  55.829  0.88 -0.14           O
+HETATM    8    O WVU A   8      -4.847  -3.095  55.540  0.87  5.52           O
+HETATM    9    O WBL A   9      -5.446  -5.865  53.295  0.86  1.80           O
+HETATM   10    O WVU A  10     -18.764  -7.889  46.326  0.82  4.33           O
+HETATM   11    O WUN A  11     -19.155  -9.159  53.869  0.80  3.03           O
+HETATM   12    O WVU A  12       4.220  -0.608  40.614  0.80  4.28           O
+HETATM   13    O WBL A  13     -16.366  -9.607  58.960  0.77  1.20           O
+HETATM   14    O WVU A  14      -9.948 -15.106  58.672  0.75  3.69           O
+HETATM   15    O WBL A  15      -7.724  -9.936  50.983  0.75 -0.77           O
+HETATM   16    O WVU A  16      -0.651  -4.557  47.923  0.74  4.33           O
+HETATM   17    O WUN A  17      -5.134  -2.763  61.050  0.73  2.60           O
+HETATM   18    O WBL A  18      -6.580  -9.468  62.910  0.71 -0.89           O
+HETATM   19    O WVU A  19     -16.012  -1.709  45.927  0.70  5.90           O
+HETATM   20    O WUN A  20      -4.585 -10.607  52.769  0.68  3.43           O
+HETATM   21    O WBL A  21     -14.485 -15.665  58.520  0.68  1.47           O
+HETATM   22    O WUN A  22     -10.471  -4.804  58.304  0.68  3.16           O
+HETATM   23    O WHP A  23     -14.656 -12.110  57.841  0.67 -1.71           O
+HETATM   24    O WVU A  24      -1.781  -4.253  50.547  0.66  5.43           O
+HETATM   25    O WUN A  25     -18.052 -11.860  52.710  0.64  2.55           O
+HETATM   26    O WBL A  26      -9.117 -12.127  55.340  0.64  1.81           O
+HETATM   27    O WHP A  27     -12.541  -9.507  58.229  0.64 -1.17           O
+HETATM   28    O WBL A  28      -7.048  -8.833  48.238  0.63 -0.52           O
+HETATM   29    O WVU A  29      -8.665  -8.444  46.603  0.60  7.38           O
+HETATM   30    O WHP A  30     -14.122 -10.182  60.751  0.60 -1.41           O
+HETATM   31    O WBL A  31     -10.579  -9.115  55.168  0.59  1.13           O
+HETATM   32    O WUN A  32     -18.349  -9.533  44.522  0.59  3.31           O
+HETATM   33    O WBL A  33      -8.175  -8.047  56.137  0.58  0.10           O
+HETATM   34    O WBL A  34      -7.622 -10.076  60.200  0.58  0.99           O
+HETATM   35    O WBL A  35      -7.653  -4.973  58.022  0.57  1.50           O
+HETATM   36    O WBL A  36     -19.060  -9.951  58.307  0.57 -0.49           O
+HETATM   37    O WBL A  37     -11.690  -2.843  60.378  0.56  1.66           O
+HETATM   38    O WBL A  38     -10.035 -10.584  61.240  0.53  0.75           O
+HETATM   39    O WUN A  39     -12.372 -14.828  57.045  0.52  2.35           O
+HETATM   40    O WBL A  40      -9.000 -12.257  58.697  0.50 -0.72           O
+HETATM   41    O WBL A  41      -4.390  -8.127  48.521  0.50  1.94           O
+HETATM   42    O WBL A  42      -9.074 -10.671  53.402  0.48  0.80           O
+HETATM   43    O WBL A  43      -2.961  -2.619  61.565  0.48  0.14           O
+HETATM   44    O WBL A  44      -4.574  -8.348  50.513  0.47  0.12           O
+HETATM   45    O WUN A  45     -12.344 -15.914  60.160  0.47  3.50           O
+HETATM   46    O WBL A  46     -11.482  -7.507  57.687  0.46  1.31           O
+HETATM   47    O WVU A  47      -2.235  -6.259  46.668  0.44  7.07           O
+HETATM   48    O WBL A  48      -6.951 -12.154  64.569  0.43  0.65           O
+HETATM   49    O WBL A  49      -7.046  -8.173  52.996  0.43  1.04           O
+HETATM   50    O WVU A  50      -8.610 -14.668  55.579  0.41  6.19           O
+HETATM   51    O WUN A  51       5.919   2.475  48.312  0.40  2.61           O
+HETATM   52    O WBL A  52     -13.082 -15.117  62.091  0.40  1.15           O
+HETATM   53    O WBL A  53      -3.491  -6.979  51.631  0.40  0.67           O
+HETATM   54    O WHP A  54      -3.297  -4.701  63.224  0.39 -1.32           O
+HETATM   55    O WBL A  55      -8.105  -7.438  59.451  0.39  0.73           O
+HETATM   56    O WUN A  56       7.772  -1.305  50.479  0.38  2.38           O
+HETATM   57    O WBL A  57      -7.045  -2.254  62.854  0.37 -0.75           O
+HETATM   58    O WHP A  58     -11.035  -9.670  63.382  0.36 -1.39           O
+HETATM   59    O WVU A  59     -13.392 -10.956  51.761  0.36  9.70           O
+HETATM   60    O WBL A  60      -3.965  -8.186  64.358  0.36 -0.53           O
+HETATM   61    O WBL A  61     -17.482  -8.577  61.337  0.35  0.15           O
+HETATM   62    O WHP A  62     -11.119  -4.042  62.825  0.34 -1.61           O
+HETATM   63    O WBL A  63      -7.623  -4.848  60.161  0.34  1.19           O
+HETATM   64    O WUN A  64       8.574  -3.317  52.307  0.34  3.50           O
+HETATM   65    O WBL A  65     -18.322 -13.570  57.305  0.34 -0.19           O
+HETATM   66    O WHP A  66      -6.852 -10.075  53.324  0.34 -1.62           O
+HETATM   67    O WBL A  67      -7.418  -6.874  63.435  0.33  0.16           O
+HETATM   68    O WUN A  68     -10.581 -14.984  56.776  0.32  3.30           O
+HETATM   69    O WBL A  69      -9.663  -7.260  61.076  0.32 -0.31           O
+HETATM   70    O WVU A  70      -3.041  -6.007  48.563  0.32  3.70           O
+HETATM   71    O WBL A  71     -11.154  -0.880  61.869  0.32  1.53           O
+HETATM   72    O WUN A  72      -2.930  -5.640  50.384  0.31  2.99           O
+HETATM   73    O WBL A  73     -11.816 -12.561  58.757  0.31  0.82           O
+HETATM   74    O WBL A  74     -10.641 -11.007  57.655  0.31  1.08           O
+HETATM   75    O WUN A  75     -18.848 -10.220  51.283  0.31  2.00           O
+HETATM   76    O WBL A  76     -15.602 -14.170  60.481  0.30  0.13           O
+HETATM   77    O WBL A  77     -10.112  -4.303  61.264  0.29 -0.13           O
+HETATM   78    O WUN A  78       7.413  -1.701  54.731  0.29  2.73           O
+HETATM   79    O WHP A  79     -15.875  -7.706  62.849  0.29 -1.66           O
+HETATM   80    O WHP A  80     -13.292  -9.596  64.478  0.29 -1.56           O
+HETATM   81    O WHP A  81     -16.417 -12.545  58.204  0.28 -2.15           O
+HETATM   82    O WBL A  82     -12.925 -12.648  60.296  0.28  0.48           O
+END
