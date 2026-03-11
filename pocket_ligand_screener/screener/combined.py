@@ -11,6 +11,9 @@ from typing import Dict, Optional
 
 import pandas as pd
 
+from pocket_ligand_screener.screener.interaction_filter import (
+    InteractionFilter,
+)
 from pocket_ligand_screener.screener.residue_contact import (
     ResidueContactScorer,
     _extract_pose_residues,
@@ -33,6 +36,7 @@ def score_all_poses(
     surface_scorer: Optional[SurfaceOverlapScorer] = None,
     sdf_supplier: Optional[object] = None,
     water_scorer: Optional[WaterDisplacementScorer] = None,
+    interaction_filter: Optional[InteractionFilter] = None,
     alpha: float = 1.0,
     beta: float = 0.3,
     residue_weight: float = 0.6,
@@ -55,6 +59,9 @@ def score_all_poses(
     water_scorer : WaterDisplacementScorer, optional
         If provided, the fraction of displaced unhappy waters is included
         in the combined score.
+    interaction_filter : InteractionFilter, optional
+        If provided, poses that do not satisfy all required interactions
+        are removed before scoring.
     alpha, beta : float
         Tversky parameters (see ``ResidueContactScorer.score_tversky``).
     residue_weight, surface_weight, water_weight : float
@@ -69,6 +76,10 @@ def score_all_poses(
         ``residue_tversky``, ``surface_coverage``,
         ``water_displaced_count``, ``combined_score``.
     """
+    # Apply interaction filter before scoring
+    if interaction_filter is not None:
+        interactions_df = interaction_filter.filter(interactions_df)
+
     w_total = residue_weight + surface_weight + water_weight
     w_res = residue_weight / w_total
     w_surf = surface_weight / w_total

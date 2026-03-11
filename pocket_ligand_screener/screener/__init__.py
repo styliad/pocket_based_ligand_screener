@@ -1,3 +1,7 @@
+from pocket_ligand_screener.screener.interaction_filter import (
+    InteractionFilter,
+    RequiredInteraction,
+)
 from pocket_ligand_screener.screener.residue_contact import (
     ResidueContactScorer,
     annotate_all_pockets,

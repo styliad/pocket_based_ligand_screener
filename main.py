@@ -25,6 +25,8 @@ from rdkit import Chem
 
 from pocket_ligand_screener.standardiser import GlideStandardiser
 from pocket_ligand_screener.screener import (
+    InteractionFilter,
+    RequiredInteraction,
     ResidueContactScorer,
     SurfaceOverlapScorer,
     annotate_all_pockets,
@@ -178,6 +180,7 @@ def select_best_poses(
     annotated_csv: Path,
     residue_scorers: dict,
     surface_scorer: SurfaceOverlapScorer | None = None,
+    interaction_filter: InteractionFilter | None = None,
     alpha: float = 1.0,
     beta: float = 0.3,
     residue_weight: float = 0.6,
@@ -196,6 +199,9 @@ def select_best_poses(
         ``{pocket_name: ResidueContactScorer}``.
     surface_scorer : SurfaceOverlapScorer, optional
         If provided, surface overlap scores are computed and combined.
+    interaction_filter : InteractionFilter, optional
+        If provided, poses lacking required interactions are excluded
+        before scoring.
     alpha, beta : float
         Tversky index parameters.
     residue_weight, surface_weight : float
@@ -220,6 +226,7 @@ def select_best_poses(
         residue_scorers=residue_scorers,
         surface_scorer=surface_scorer,
         sdf_supplier=sdf_supplier,
+        interaction_filter=interaction_filter,
         alpha=alpha,
         beta=beta,
         residue_weight=residue_weight,
