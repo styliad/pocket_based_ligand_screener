@@ -1,4 +1,4 @@
-"""Combined scoring: residue contacts + surface overlap.
+"""Combined scoring: residue contacts + surface overlap + water displacement.
 
 Merges orthogonal signals into a single ranking score per
 (pose, pocket) pair and selects the best pose per ligand.
@@ -20,6 +20,9 @@ from pocket_ligand_screener.screener.surface_overlap import (
     SurfaceOverlapScorer,
     coords_from_mol,
 )
+from pocket_ligand_screener.screener.water_displacement import (
+    WaterDisplacementScorer,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -29,10 +32,12 @@ def score_all_poses(
     residue_scorers: Dict[str, ResidueContactScorer],
     surface_scorer: Optional[SurfaceOverlapScorer] = None,
     sdf_supplier: Optional[object] = None,
+    water_scorer: Optional[WaterDisplacementScorer] = None,
     alpha: float = 1.0,
     beta: float = 0.3,
     residue_weight: float = 0.6,
     surface_weight: float = 0.4,
+    water_weight: float = 0.0,
 ) -> pd.DataFrame:
     """Score every (pose, pocket) combination and return a results DataFrame.
 
@@ -46,10 +51,13 @@ def score_all_poses(
         If provided, surface overlap scores are computed and combined.
     sdf_supplier : iterable of rdkit.Chem.Mol, optional
         Mol objects indexed by ``docked_ligand_index``. Required when
-        ``surface_scorer`` is provided.
+        ``surface_scorer`` or ``water_scorer`` is provided.
+    water_scorer : WaterDisplacementScorer, optional
+        If provided, the fraction of displaced unhappy waters is included
+        in the combined score.
     alpha, beta : float
         Tversky parameters (see ``ResidueContactScorer.score_tversky``).
-    residue_weight, surface_weight : float
+    residue_weight, surface_weight, water_weight : float
         Weights for the combined score (normalised internally).
 
     Returns
@@ -58,32 +66,45 @@ def score_all_poses(
         One row per (pose, pocket) with columns:
         ``docked_ligand_index``, ``pocket_name``,
         ``residue_count``, ``residue_coverage``, ``residue_jaccard``,
-        ``residue_tversky``, ``surface_coverage``, ``combined_score``.
+        ``residue_tversky``, ``surface_coverage``,
+        ``water_displaced_count``, ``combined_score``.
     """
-    w_total = residue_weight + surface_weight
+    w_total = residue_weight + surface_weight + water_weight
     w_res = residue_weight / w_total
     w_surf = surface_weight / w_total
+    w_water = water_weight / w_total
 
     # Pre-index mol objects if available
     mol_map: Dict[int, object] = {}
-    if surface_scorer is not None and sdf_supplier is not None:
+    if sdf_supplier is not None and (surface_scorer is not None or water_scorer is not None):
         for i, mol in enumerate(sdf_supplier):
             if mol is not None:
                 mol_map[i] = mol
 
     rows = []
     for pose_idx, pose_df in interactions_df.groupby("docked_ligand_index"):
+        # Compute ligand coordinates once per pose (shared by surface & water)
+        mol = mol_map.get(int(pose_idx))
+        ligand_coords = coords_from_mol(mol) if mol is not None else None
+
+        # Water displacement (pose-level, independent of pocket)
+        water_disp = 0
+        if water_scorer is not None and ligand_coords is not None:
+            water_disp = water_scorer.score(ligand_coords)
+
         for pocket_name, scorer in residue_scorers.items():
             res_scores = scorer.score_all(pose_df, alpha=alpha, beta=beta)
 
             surf_cov = 0.0
             if surface_scorer is not None and pocket_name in surface_scorer.pockets:
-                mol = mol_map.get(int(pose_idx))
-                if mol is not None:
-                    coords = coords_from_mol(mol)
-                    surf_cov = surface_scorer.score(coords, pocket_name=pocket_name)
+                if ligand_coords is not None:
+                    surf_cov = surface_scorer.score(ligand_coords, pocket_name=pocket_name)
 
-            combined = w_res * res_scores["tversky"] + w_surf * surf_cov
+            combined = (
+                w_res * res_scores["tversky"]
+                + w_surf * surf_cov
+                + w_water * water_disp
+            )
 
             rows.append({
                 "docked_ligand_index": pose_idx,
@@ -93,6 +114,7 @@ def score_all_poses(
                 "residue_jaccard": res_scores["jaccard"],
                 "residue_tversky": res_scores["tversky"],
                 "surface_coverage": surf_cov,
+                "water_displaced_count": water_disp,
                 "combined_score": combined,
             })
 
