@@ -4,4 +4,6 @@ __pycache__/
 *.pyc
 poetry.lock
 notes.md
-./data/
+data/
+validation/
+notebooks/validation.ipynb
