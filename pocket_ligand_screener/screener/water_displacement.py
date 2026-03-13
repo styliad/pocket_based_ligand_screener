@@ -8,15 +8,14 @@ unhappy + very-unhappy waters.
 
 from __future__ import annotations
 
-import logging
 from typing import Sequence
+
+from loguru import logger
 
 import numpy as np
 from scipy.spatial import cKDTree
 
 from water_annotator.base import WaterCategory, WaterSite, classify_water
-
-logger = logging.getLogger(__name__)
 
 # Default categories that count as "displaceable" targets.
 _DEFAULT_TARGET_CATEGORIES = frozenset({WaterCategory.VERY_UNHAPPY, WaterCategory.UNHAPPY})

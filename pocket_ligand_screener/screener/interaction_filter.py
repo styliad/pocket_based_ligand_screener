@@ -7,15 +7,13 @@ check are excluded from the scoring DataFrame entirely.
 
 from __future__ import annotations
 
-import logging
 from dataclasses import dataclass
 from typing import List, Optional, Set
 
+from loguru import logger
 import pandas as pd
 
 from pocket_ligand_screener.screener.residue_contact import _parse_residue_number
-
-logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -89,7 +87,7 @@ class InteractionFilter:
         n_total = interactions_df["docked_ligand_index"].nunique()
         n_pass = len(passing_indices)
         logger.info(
-            "InteractionFilter: %d / %d poses passed (%d removed)",
+            "InteractionFilter: {} / {} poses passed ({} removed)",
             n_pass,
             n_total,
             n_total - n_pass,

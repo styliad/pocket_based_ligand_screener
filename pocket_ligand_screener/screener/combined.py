@@ -6,8 +6,9 @@ Merges orthogonal signals into a single ranking score per
 
 from __future__ import annotations
 
-import logging
 from typing import Dict, Optional
+
+from loguru import logger
 
 import pandas as pd
 
@@ -26,8 +27,6 @@ from pocket_ligand_screener.screener.surface_overlap import (
 from pocket_ligand_screener.screener.water_displacement import (
     WaterDisplacementScorer,
 )
-
-logger = logging.getLogger(__name__)
 
 
 def score_all_poses(

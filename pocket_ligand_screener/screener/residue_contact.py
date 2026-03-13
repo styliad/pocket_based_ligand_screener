@@ -18,13 +18,11 @@ Annotated interactions CSV columns:
 from __future__ import annotations
 
 import ast
-import logging
 from pathlib import Path
 from typing import Dict, List, Set, Tuple
 
+from loguru import logger
 import pandas as pd
-
-logger = logging.getLogger(__name__)
 
 ResidueKey = Tuple[str, int]  # (residue_type, residue_number)
 

@@ -12,14 +12,12 @@ to arbitrarily large files with constant memory overhead.
 
 from __future__ import annotations
 
-import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
 
+from loguru import logger
 from rdkit import Chem
-
-logger = logging.getLogger(__name__)
 
 # Standardised property names written into output SDF files.
 STANDARD_PROPS = (

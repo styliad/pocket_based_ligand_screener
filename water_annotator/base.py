@@ -14,13 +14,11 @@ The dG value is stored in the B-factor column.
 
 from __future__ import annotations
 
-import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum
+from loguru import logger
 from pathlib import Path
-
-logger = logging.getLogger(__name__)
 
 # Default classification thresholds (kcal/mol).
 _VERY_UNHAPPY_THRESHOLD = 3.5
